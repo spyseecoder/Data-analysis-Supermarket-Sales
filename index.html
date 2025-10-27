@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Sales Report</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+    <!-- Chosen Palette: Warm Neutral (Stone) + Indigo Accent -->
+    <!-- Application Structure Plan: The SPA uses a tabbed dashboard structure ('Overview', 'Performance', 'Customer & Operations', 'Sales Drivers') instead of mirroring the linear report. This is more user-friendly, allowing non-linear exploration. The 'Overview' tab acts as a landing page with key KPIs and recommendations. Subsequent tabs provide detailed, grouped charts and insights. Navigation is handled by JS-powered tabs. -->
+    <!-- Visualization & Content Choices: 1. Overview KPIs: (Report Exec Summary) -> Goal: Inform -> Viz: Styled HTML "stat cards" -> Interaction: None -> Justification: Quick summary. 2. Product Income: (Report Table 2) -> Goal: Compare/Rank -> Viz: Horizontal Bar Chart (Chart.js) -> Interaction: Hover Tooltip -> Justification: Handles long labels well. 3. Payment Sales: (Report Table 1) -> Goal: Compare -> Viz: Vertical Bar Chart (Chart.js) -> Interaction: Hover Tooltip -> Justification: Simple, clear comparison. 4. Gender Quantity: (Report Table 3) -> Goal: Compare -> Viz: Vertical Bar Chart (Chart.js) -> Interaction: Hover Tooltip -> Justification: Simple comparison. 5. Branch Rating: (Report Table 4) -> Goal: Compare/Rank -> Viz: Vertical Bar Chart (Chart.js) -> Interaction: Hover Tooltip -> Justification: Simple ranking. 6. Regression Factors: (Report Table 6) -> Goal: Inform/Relate -> Viz: Styled HTML list/cards -> Interaction: None -> Justification: More digestible than a complex regression table. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        
+        [role="tabpanel"][hidden] {
+            display: none;
+        }
+
+        [role="tab"] {
+            transition: all 0.2s ease-in-out;
+        }
+
+        [role="tab"]:hover:not([aria-selected="true"]) {
+            background-color: #f5f5f4; /* stone-100 */
+        }
+
+        [role="tab"]:focus-visible {
+            outline: 2px solid #4f46e5; /* indigo-600 */
+            outline-offset: 2px;
+        }
+
+        [role="tab"][aria-selected="true"] {
+            border-bottom-color: #4f46e5; /* indigo-600 */
+            color: #4f46e5; /* indigo-600 */
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800 antialiased">
+
+    <div class="min-h-screen container mx-auto p-4 md:p-8">
+        
+        <header class="mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-stone-900">Supermarket Sales Performance</h1>
+            <p class="text-lg text-stone-600 mt-2">Interactive analysis of 1,000 sales transactions.</p>
+        </header>
+
+        <div>
+            <div class="border-b border-stone-200">
+                <nav class="-mb-px flex space-x-4 md:space-x-8" aria-label="Tabs" role="tablist">
+                    <button role="tab"
+                            aria-selected="true"
+                            aria-controls="page-overview"
+                            id="tab-overview"
+                            class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm md:text-base border-transparent text-stone-500 hover:text-stone-700">
+                        Overview
+                    </button>
+                    
+                    <button role="tab"
+                            aria-selected="false"
+                            aria-controls="page-performance"
+                            id="tab-performance"
+                            class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm md:text-base border-transparent text-stone-500 hover:text-stone-700">
+                        Performance Insights
+                    </button>
+                    
+                    <button role="tab"
+                            aria-selected="false"
+                            aria-controls="page-customer-ops"
+                            id="tab-customer-ops"
+                            class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm md:text-base border-transparent text-stone-500 hover:text-stone-700">
+                        Customer & Operations
+                    </button>
+
+                    <button role="tab"
+                            aria-selected="false"
+                            aria-controls="page-drivers"
+                            id="tab-drivers"
+                            class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm md:text-base border-transparent text-stone-500 hover:text-stone-700">
+                        Sales Drivers
+                    </button>
+                </nav>
+            </div>
+
+            <main class="mt-8">
+                
+                <section id="page-overview" role="tabpanel" aria-labelledby="tab-overview">
+                    <div class="max-w-4xl">
+                        <p class="text-lg text-stone-700 mb-6">
+                            This dashboard summarizes key performance metrics and drivers from 1,000 sales transactions. The analysis highlights top-performing products and branches, key customer behaviors, and the most significant factors that predict sales. Use the tabs to explore detailed insights.
+                        </p>
+                    </div>
+
+                    <h2 class="text-2xl font-semibold text-stone-900 mb-4">Key Metrics at a Glance</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                        <div class="bg-white p-5 rounded-lg border border-stone-200 shadow-sm">
+                            <h3 class="text-sm font-medium text-stone-500 uppercase">Top Product Line (Income)</h3>
+                            <p class="text-2xl font-bold text-indigo-600 mt-2">Food & Beverages</p>
+                            <p class="text-base text-stone-600">$2,673.56</p>
+                        </div>
+                        <div class="bg-white p-5 rounded-lg border border-stone-200 shadow-sm">
+                            <h3 class="text-sm font-medium text-stone-500 uppercase">Top Branch (Rating)</h3>
+                            <p class="text-2xl font-bold text-indigo-600 mt-2">Giza</p>
+                            <p class="text-base text-stone-600">7.07 / 10 Avg. Rating</p>
+                        </div>
+                        <div class="bg-white p-5 rounded-lg border border-stone-200 shadow-sm">
+                            <h3 class="text-sm font-medium text-stone-500 uppercase">Top Customer (Quantity)</h3>
+                            <p class="text-2xl font-bold text-indigo-600 mt-2">Female</p>
+                            <p class="text-base text-stone-600">5.76 Avg. Units</p>
+                        </div>
+                        <div class="bg-white p-5 rounded-lg border border-stone-200 shadow-sm">
+                            <h3 class="text-sm font-medium text-stone-500 uppercase">Strongest Sales Driver</h3>
+                            <p class="text-2xl font-bold text-indigo-600 mt-2">Quantity</p>
+                            <p class="text-base text-stone-600">+$58.61 per unit</p>
+                        </div>
+                    </div>
+
+                    <h2 class="text-2xl font-semibold text-stone-900 mt-10 mb-4">Key Recommendations</h2>
+                    <div class="space-y-4 max-w-4xl">
+                        <div class="bg-white p-5 rounded-lg border border-indigo-200 shadow-sm flex items-start space-x-4">
+                            <span class="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-lg">1</span>
+                            <div>
+                                <h3 class="text-lg font-semibold text-stone-800">Drive Higher Volume</h3>
+                                <p class="text-stone-600">Campaigns and promotions aimed at increasing the number of items (Quantity) per basket will yield the highest direct sales impact.</p>
+                            </div>
+                        </div>
+                        <div class="bg-white p-5 rounded-lg border border-stone-200 shadow-sm flex items-start space-x-4">
+                            <span class="flex-shrink-0 w-8 h-8 rounded-full bg-stone-100 text-stone-700 flex items-center justify-center font-bold text-lg">2</span>
+                            <div>
+                                <h3 class="text-lg font-semibold text-stone-800">Product Mix Optimization</h3>
+                                <p class="text-stone-600">Given the significant positive impact of Unit Price, stocking and promoting higher-margin, higher-priced goods is an effective strategy.</p>
+                            </div>
+                        </div>
+                        <div class="bg-white p-5 rounded-lg border border-stone-200 shadow-sm flex items-start space-x-4">
+                            <span class="flex-shrink-0 w-8 h-8 rounded-full bg-stone-100 text-stone-700 flex items-center justify-center font-bold text-lg">3</span>
+                            <div>
+                                <h3 class="text-lg font-semibold text-stone-800">Improve Cairo Branch</h3>
+                                <p class="text-stone-600">The Cairo branch's lower rating suggests an opportunity for operational or service improvements to match the satisfaction levels of Giza.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="page-performance" role="tabpanel" aria-labelledby="tab-performance" hidden>
+                    <p class="text-lg text-stone-700 mb-6 max-w-4xl">
+                        This section focuses on financial performance. The charts below illustrate which product lines generate the most gross income and how average sales value differs across payment methods.
+                    </p>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
+                        <div class="bg-white p-6 rounded-lg border border-stone-200 shadow-sm flex flex-col">
+                            <h2 class="text-xl font-semibold text-stone-900 mb-4">Total Gross Income by Product Line</h2>
+                            <p class="text-stone-600 text-sm mb-4">"Food and beverages" leads in income, while "Health and beauty" generates the least.</p>
+                            <div class="chart-container flex-grow">
+                                <canvas id="productIncomeChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg border border-stone-200 shadow-sm flex flex-col">
+                            <h2 class="text-xl font-semibold text-stone-900 mb-4">Average Sales by Payment Method</h2>
+                            <p class="text-stone-600 text-sm mb-4">Average sales are very consistent, with "Cash" having a slight edge over "Credit card" and "Ewallet".</p>
+                            <div class="chart-container flex-grow">
+                                <canvas id="paymentSalesChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="page-customer-ops" role="tabpanel" aria-labelledby="tab-customer-ops" hidden>
+                    <p class="text-lg text-stone-700 mb-6 max-w-4xl">
+                        Understand your customers and branch performance. This area shows purchasing behavior by gender and customer satisfaction scores by branch.
+                    </p>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
+                        <div class="bg-white p-6 rounded-lg border border-stone-200 shadow-sm flex flex-col">
+                            <h2 class="text-xl font-semibold text-stone-900 mb-4">Average Quantity Sold by Gender</h2>
+                            <p class="text-stone-600 text-sm mb-4">Female customers purchase a higher average quantity of items (5.76) per transaction compared to male customers (5.18).</p>
+                            <div class="chart-container flex-grow">
+                                <canvas id="genderQuantityChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg border border-stone-200 shadow-sm flex flex-col">
+                            <h2 class="text-xl font-semibold text-stone-900 mb-4">Average Customer Rating by Branch</h2>
+                            <p class="text-stone-600 text-sm mb-4">The Giza branch has the highest customer satisfaction (7.07), while Cairo has the lowest (6.82).</p>
+                            <div class="chart-container flex-grow">
+                                <canvas id="branchRatingChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="page-drivers" role="tabpanel" aria-labelledby="tab-drivers" hidden>
+                    <p class="text-lg text-stone-700 mb-6 max-w-4xl">
+                        What factors actually predict total sales? This regression analysis identifies the statistically significant drivers from the data. The model explains **89.1% (R²)** of the variance in sales.
+                    </p>
+                    <h2 class="text-2xl font-semibold text-stone-900 mb-4">Key Sales Drivers (Coefficients)</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 max-w-4xl">
+                        <div class="bg-white p-5 rounded-lg border-2 border-green-300 shadow-sm">
+                            <h3 class="text-lg font-semibold text-stone-800">Quantity</h3>
+                            <p class="text-3xl font-bold text-green-700 mt-2">+$58.61</p>
+                            <p class="text-stone-600 mt-1">For every 1-unit increase in quantity, sales increase by $58.61. This is the strongest driver.</p>
+                        </div>
+                        <div class="bg-white p-5 rounded-lg border-2 border-green-300 shadow-sm">
+                            <h3 class="text-lg font-semibold text-stone-800">Unit Price</h3>
+                            <p class="text-3xl font-bold text-green-700 mt-2">+$5.82</p>
+                            <p class="text-stone-600 mt-1">For every $1 increase in unit price, sales increase by $5.82.</p>
+                        </div>
+                        <div class="bg-white p-5 rounded-lg border border-stone-200 shadow-sm">
+                            <h3 class="text-lg font-semibold text-stone-800">Payment (Credit Card)</h3>
+                            <p class="text-3xl font-bold text-green-700 mt-2">+$10.60</p>
+                            <p class="text-stone-600 mt-1">Using a credit card (vs. other methods) is associated with a $10.60 increase in sales.</p>
+                        </div>
+                        <div class="bg-white p-5 rounded-lg border border-stone-200 shadow-sm">
+                            <h3 class="text-lg font-semibold text-stone-800">Rating</h3>
+                            <p class="text-3xl font-bold text-red-600 mt-2">-$2.93</p>
+                            <p class="text-stone-600 mt-1">A 1-point increase in rating is weakly associated with a $2.93 decrease in sales (borderline significance).</p>
+                        </div>
+                    </div>
+                </section>
+
+            </main>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            const tabs = document.querySelectorAll('[role="tab"]');
+            const panels = document.querySelectorAll('[role="tabpanel"]');
+            const tabList = document.querySelector('[role="tablist"]');
+
+            tabList.addEventListener('click', (e) => {
+                const clickedTab = e.target.closest('[role="tab"]');
+                if (!clickedTab) return;
+
+                e.preventDefault();
+                
+                tabs.forEach(tab => {
+                    tab.setAttribute('aria-selected', 'false');
+                    tab.classList.remove('border-indigo-600', 'text-indigo-600', 'font-semibold');
+                    tab.classList.add('border-transparent', 'text-stone-500', 'hover:text-stone-700');
+                });
+                
+                clickedTab.setAttribute('aria-selected', 'true');
+                clickedTab.classList.add('border-indigo-600', 'text-indigo-600', 'font-semibold');
+                clickedTab.classList.remove('border-transparent', 'text-stone-500', 'hover:text-stone-700');
+
+                panels.forEach(panel => {
+                    panel.setAttribute('hidden', 'true');
+                });
+
+                const controlledPanel = document.getElementById(clickedTab.getAttribute('aria-controls'));
+                if (controlledPanel) {
+                    controlledPanel.removeAttribute('hidden');
+                }
+            });
+
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        enabled: true,
+                        backgroundColor: '#1c1917',
+                        titleFont: { weight: 'bold' },
+                        bodyFont: { size: 14 },
+                        padding: 12,
+                        cornerRadius: 6,
+                        callbacks: {}
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            color: '#78716c'
+                        }
+                    },
+                    y: {
+                        grid: {
+                            color: '#f5f5f4'
+                        },
+                        ticks: {
+                            color: '#78716c'
+                        }
+                    }
+                }
+            };
+            
+            function renderProductIncomeChart() {
+                const ctx = document.getElementById('productIncomeChart')?.getContext('2d');
+                if (!ctx) return;
+                
+                const productData = {
+                    labels: ['Health and beauty', 'Home and lifestyle', 'Fashion accessories', 'Electronic accessories', 'Sports and travel', 'Food and beverages'],
+                    datasets: [{
+                        label: 'Total Gross Income ($)',
+                        data: [2342.56, 2564.85, 2585.99, 2587.50, 2624.90, 2673.56],
+                        backgroundColor: [
+                            '#fde68a', 
+                            '#fca5a5', 
+                            '#f0abfc', 
+                            '#a78bfa', 
+                            '#818cf8', 
+                            '#6366f1'
+                        ],
+                        borderColor: '#ffffff',
+                        borderWidth: 1
+                    }]
+                };
+
+                const config = JSON.parse(JSON.stringify(chartOptions));
+                config.indexAxis = 'y';
+                config.plugins.tooltip.callbacks.label = (context) => `$${context.formattedValue}`;
+                config.scales.x.ticks.callback = (value) => `$${value / 1000}k`;
+                config.scales.y.grid.display = false;
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: productData,
+                    options: config
+                });
+            }
+
+            function renderPaymentSalesChart() {
+                const ctx = document.getElementById('paymentSalesChart')?.getContext('2d');
+                if (!ctx) return;
+
+                const paymentData = {
+                    labels: ['Cash', 'Credit card', 'Ewallet'],
+                    datasets: [{
+                        label: 'Average Sales ($)',
+                        data: [326.182, 324.01, 318.821],
+                        backgroundColor: [
+                            '#a5b4fc', 
+                            '#93c5fd', 
+                            '#6ee7b7'
+                        ],
+                        borderWidth: 0
+                    }]
+                };
+                
+                const config = JSON.parse(JSON.stringify(chartOptions));
+                config.plugins.tooltip.callbacks.label = (context) => `$${context.formattedValue}`;
+                config.scales.y.ticks.callback = (value) => `$${value}`;
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: paymentData,
+                    options: config
+                });
+            }
+
+            function renderGenderQuantityChart() {
+                const ctx = document.getElementById('genderQuantityChart')?.getContext('2d');
+                if (!ctx) return;
+                
+                const genderData = {
+                    labels: ['Female', 'Male'],
+                    datasets: [{
+                        label: 'Average Quantity Sold',
+                        data: [5.75832, 5.17949],
+                        backgroundColor: [
+                            '#86efac', 
+                            '#67e8f9'
+                        ],
+                        borderWidth: 0
+                    }]
+                };
+                
+                const config = JSON.parse(JSON.stringify(chartOptions));
+                config.plugins.tooltip.callbacks.label = (context) => `${context.formattedValue} units`;
+                
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: genderData,
+                    options: config
+                });
+            }
+
+            function renderBranchRatingChart() {
+                const ctx = document.getElementById('branchRatingChart')?.getContext('2d');
+                if (!ctx) return;
+                
+                const branchData = {
+                    labels: ['Giza', 'Alex', 'Cairo'],
+                    datasets: [{
+                        label: 'Average Rating',
+                        data: [7.07287, 7.02706, 6.81807],
+                        backgroundColor: [
+                            '#c4b5fd', 
+                            '#fca5a5', 
+                            '#fdba74'
+                        ],
+                        borderWidth: 0
+                    }]
+                };
+                
+                const config = JSON.parse(JSON.stringify(chartOptions));
+                config.plugins.tooltip.callbacks.label = (context) => `${context.formattedValue} / 10`;
+                config.scales.y.beginAtZero = false;
+                config.scales.y.min = 6.5;
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: branchData,
+                    options: config
+                });
+            }
+            
+            renderProductIncomeChart();
+            renderPaymentSalesChart();
+            renderGenderQuantityChart();
+            renderBranchRatingChart();
+        });
+    </script>
+</body>
+</html>
